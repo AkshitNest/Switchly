@@ -9,5 +9,11 @@ public record CreateFlagRequest(
         String key,
 
         @NotBlank
-        String name
-) {}
+        String name,
+
+        String description
+) {
+    public CreateFlagRequest(String key, String name) {
+        this(key, name, null);
+    }
+}
