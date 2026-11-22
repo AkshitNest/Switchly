@@ -1,0 +1,15 @@
+Backend (Maven and Testcontainers)
+[INFO] Tests run: 255, Failures: 0, Errors: 0, Skipped: 0
+
+Chrome through the TLS edge
+✓   1 e2e/console.spec.mjs:65:1 › registration, organization and project selection, reload, logout and login (2.5s)
+✓   2 e2e/console.spec.mjs:97:1 › all four logical types, precise JSON, environment configuration and deletion (3.4s)
+✓   3 e2e/console.spec.mjs:151:1 › segments, preview, ordered targeting, rollout and SDK credential lifecycle (5.0s)
+✓   4 e2e/console.spec.mjs:270:1 › environment CRUD and mobile navigation (10.4s)
+✓   5 e2e/console.spec.mjs:303:3 › ADMIN gets matching controls and server authorization (1.6s)
+✓   6 e2e/console.spec.mjs:303:3 › EMPLOYEE gets matching controls and server authorization (2.8s)
+✓   7 e2e/console.spec.mjs:384:1 › a real expired JWT is refreshed across concurrent reads (1.1m)
+✓   8 e2e/console.spec.mjs:409:1 › dashboard, project switching and responsive layouts (1.6s)
+✓   9 e2e/console.spec.mjs:485:1 › local model drafts an editable flag before explicit creation (6.2s)
+✓  10 e2e/console.spec.mjs:503:1 › team invitation cancellation, workspace selection, reassignment and removal (6.2s)
+10 passed (1.7m)

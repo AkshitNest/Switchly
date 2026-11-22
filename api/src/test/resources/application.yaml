@@ -1,0 +1,44 @@
+spring:
+  jackson:
+    deserialization:
+      use-big-decimal-for-floats: true
+      fail-on-reading-dup-tree-key: true
+  application:
+    name: switchly-api
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:15432/switchly}
+    username: ${SPRING_DATASOURCE_USERNAME:switchly}
+    password: ${SPRING_DATASOURCE_PASSWORD:switchly}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+switchly:
+  jwt:
+    secret: "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970"
+    access-token-expiration-minutes: 15
+    refresh-token-expiration-days: 7
+
+  rate-limit:
+    enabled: true
+    login-limit: 1000
+    login-window-seconds: 60
+    register-limit: 1000
+    register-window-seconds: 60
+    refresh-limit: 1000
+    refresh-window-seconds: 60
+
+  cors:
+    allowed-origins: "https://app.switchly.live,http://localhost:3000"
+    allowed-methods: GET,POST,PUT,DELETE,OPTIONS,PATCH
+    allowed-headers: Authorization,Content-Type,Accept,X-Requested-With
+    allow-credentials: false
+    max-age: 3600

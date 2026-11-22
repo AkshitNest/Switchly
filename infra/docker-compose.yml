@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: switchly-postgres
+    environment:
+      POSTGRES_DB: switchly
+      POSTGRES_USER: switchly
+      POSTGRES_PASSWORD: switchly
+    ports:
+      - "15432:5432"
+    restart: unless-stopped
+    volumes:
+      - switchly-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U switchly -d switchly"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  api:
+    image: switchly-api:verify
+    build:
+      context: ../api
+      dockerfile: Dockerfile
+    container_name: switchly-api
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/switchly
+      SPRING_DATASOURCE_USERNAME: switchly
+      SPRING_DATASOURCE_PASSWORD: switchly
+      # Required: provide a 64-character hex JWT secret (256 bits)
+      # Generate with: openssl rand -hex 32
+      SWITCHLY_JWT_SECRET: ${SWITCHLY_JWT_SECRET:-}
+      SWITCHLY_JWT_ACCESS_TOKEN_EXPIRATION_MINUTES: ${SWITCHLY_JWT_ACCESS_TOKEN_EXPIRATION_MINUTES:-15}
+      SWITCHLY_JWT_REFRESH_TOKEN_EXPIRATION_DAYS: ${SWITCHLY_JWT_REFRESH_TOKEN_EXPIRATION_DAYS:-7}
+      SWITCHLY_CORS_ALLOWED_ORIGINS: ${SWITCHLY_CORS_ALLOWED_ORIGINS:-}
+      SWITCHLY_RATE_LIMIT_ENABLED: ${SWITCHLY_RATE_LIMIT_ENABLED:-true}
+      SWITCHLY_RATE_LIMIT_EVALUATION_LIMIT: ${SWITCHLY_RATE_LIMIT_EVALUATION_LIMIT:-600}
+      SWITCHLY_RATE_LIMIT_LOGIN_LIMIT: ${SWITCHLY_RATE_LIMIT_LOGIN_LIMIT:-5}
+      SWITCHLY_RATE_LIMIT_LOGIN_WINDOW: ${SWITCHLY_RATE_LIMIT_LOGIN_WINDOW:-60}
+      SWITCHLY_RATE_LIMIT_REGISTER_LIMIT: ${SWITCHLY_RATE_LIMIT_REGISTER_LIMIT:-3}
+      SWITCHLY_RATE_LIMIT_REGISTER_WINDOW: ${SWITCHLY_RATE_LIMIT_REGISTER_WINDOW:-60}
+      SWITCHLY_RATE_LIMIT_REFRESH_LIMIT: ${SWITCHLY_RATE_LIMIT_REFRESH_LIMIT:-10}
+      SWITCHLY_RATE_LIMIT_REFRESH_WINDOW: ${SWITCHLY_RATE_LIMIT_REFRESH_WINDOW:-60}
+      SWITCHLY_TRUSTED_PROXIES: ${SWITCHLY_TRUSTED_PROXIES:-}
+    stop_grace_period: 35s
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "--max-time", "4", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ../web
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      OLLAMA_ORIGIN: ${OLLAMA_ORIGIN:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen:latest}
+      API_ORIGIN: http://api:8080
+      NODE_ENV: production
+      COOKIE_SECURE: ${SWITCHLY_COOKIE_SECURE:-false}
+    restart: unless-stopped
+    stop_grace_period: 100s
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/',{signal:AbortSignal.timeout(3000)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  switchly-db-data:

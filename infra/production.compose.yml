@@ -1,0 +1,86 @@
+# Layer over docker-compose.yml for a single-host release.
+x-release-logs: &release-logs
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  postgres:
+    logging: *release-logs
+    image: ${SWITCHLY_POSTGRES_IMAGE:-postgres:17@sha256:31ba9c94a03ada9988f2bb493a22a75eef3a185884533e5cdbcd498ea835b08f}
+    container_name: !reset null
+    ports: !reset []
+    command: ["postgres", "-c", "log_error_verbosity=terse", "-c", "log_min_error_statement=panic", "-c", "log_parameter_max_length_on_error=0"]
+    environment: !override
+      POSTGRES_DB: switchly
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/bootstrap-password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    volumes:
+      - ./ops/init-app-role.sh:/docker-entrypoint-initdb.d/10-app-role.sh:ro
+    secrets:
+      - bootstrap-password
+      - db-password
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "switchly"]
+
+  api:
+    logging: *release-logs
+    container_name: !reset null
+    build: !reset null
+    image: ${SWITCHLY_API_IMAGE:?set an immutable API release tag or digest}
+    ports: !reset []
+    environment: !override
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CONFIG_IMPORT: configtree:/run/secrets/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${SWITCHLY_DATABASE:-switchly}
+      SPRING_DATASOURCE_USERNAME: switchly
+      SWITCHLY_TRUSTED_PROXIES: ""
+      LOGGING_LEVEL_ORG_HIBERNATE_ORM_JDBC_ERROR: "OFF"
+      LOGGING_LEVEL_ORG_HIBERNATE_ENGINE_JDBC_SPI_SQLEXCEPTIONHELPER: "OFF"
+    secrets:
+      - source: db-password
+        target: spring.datasource.password
+      - source: jwt-key
+        target: switchly.jwt.secret
+
+  web:
+    logging: *release-logs
+    build: !reset null
+    image: ${SWITCHLY_WEB_IMAGE:?set an immutable console release tag or digest}
+    ports: !reset []
+    environment:
+      COOKIE_SECURE: "true"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  edge:
+    logging: *release-logs
+    image: ${SWITCHLY_EDGE_IMAGE:-caddy:2-alpine@sha256:003a97808e781aa9f7e75cc2f43d34d461099031faf5e20faefb9f61126836f0}
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:2019/config/"]
+      interval: 10s
+      timeout: 4s
+      retries: 3
+    environment:
+      SWITCHLY_DOMAIN: ${SWITCHLY_DOMAIN:?set the deployment hostname}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - edge-data:/data
+      - edge-config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+secrets:
+  db-password:
+    file: ${SWITCHLY_SECRETS_DIR:?set an absolute private directory}/db-password
+  bootstrap-password:
+    file: ${SWITCHLY_SECRETS_DIR}/bootstrap-password
+  jwt-key:
+    file: ${SWITCHLY_SECRETS_DIR}/jwt-key
+volumes:
+  edge-data:
+  edge-config:

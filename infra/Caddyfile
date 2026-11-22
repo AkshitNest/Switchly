@@ -1,0 +1,13 @@
+{$SWITCHLY_DOMAIN} {
+    header Strict-Transport-Security "max-age=31536000"
+    @sdk path /api/v1/evaluate /api/v1/evaluate/batch
+    handle @sdk {
+        reverse_proxy api:8080
+    }
+    handle /healthz {
+        reverse_proxy api:8080
+    }
+    handle {
+        reverse_proxy web:3000
+    }
+}

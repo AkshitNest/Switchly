@@ -1,0 +1,28 @@
+{
+  "tls_and_errors": "Verified certificate chain, HSTS, secure session cookie and redacted 400/401 responses",
+  "app_role_superuser_createdb_createrole": "f|f|f",
+  "in_flight_login_on_shutdown": 200,
+  "readiness_on_database_outage_and_recovery": [
+    503,
+    200
+  ],
+  "backup_bytes": 85492,
+  "restored_tables": 14,
+  "matching_database_fingerprint_sha256": "cd943391b838a19b3906a155a5e9f990d9d43bbdcf4cc975177dc0c58e77b285",
+  "existing_restore_target_refused": true,
+  "damaged_archive_refused_before_database_creation": true,
+  "restored_flyway_version": "10",
+  "stop_exit_codes": {
+    "postgres": 0,
+    "api": 143,
+    "web": 0
+  },
+  "volume_after_container_recreation": "All table fingerprints matched, original SDK key evaluated",
+  "cutover_witness_counts_restored_original": [
+    1,
+    0
+  ],
+  "restored_application": "Login, project flags, rollout and original SDK credential passed",
+  "switchback": "Original database served the same SDK evaluation",
+  "plaintext_canaries_absent_from_logs": 9
+}
